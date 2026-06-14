@@ -7,7 +7,7 @@
   <style>
     body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #f1f2f6; color: #2d3436; }
     header { background: #2c3e50; color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    main { padding: 20px; max-width: 800px; margin: auto; }
+    main { padding: 20px; max-width: 950px; margin: auto; }
     
     /* Contenedor del Login */
     .login-container { max-width: 400px; margin: 100px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
@@ -24,14 +24,24 @@
     .seccion { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 25px; }
     .seccion h3 { margin-top: 0; border-bottom: 2px solid #f1f2f6; padding-bottom: 10px; color: #34495e; }
     
+    .table-container { width: 100%; overflow-x: auto; max-height: 400px; overflow-y: auto; }
     table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
     th, td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
-    th { background: #f8f9fa; color: #7f8c8d; }
+    th { background: #f8f9fa; color: #7f8c8d; position: sticky; top: 0; z-index: 5; }
     
     button { width: 100%; padding: 14px; background: #2ecc71; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
     button:hover { background: #27ae60; }
     
-    /* Botón de Zona de Peligro */
+    /* Botones de acción en tablas */
+    .btn-accion { padding: 6px 12px; font-size: 13px; width: auto; border-radius: 4px; display: inline-block; margin-right: 5px; font-weight: normal; }
+    .btn-modificar { background: #f1c40f; color: #2c3e50; }
+    .btn-modificar:hover { background: #f39c12; }
+    .btn-borrar-item { background: #ff7675; color: white; }
+    .btn-borrar-item:hover { background: #e84393; }
+
+    /* Buscador */
+    .busqueda-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+
     .btn-peligro { background: #ff7675; margin-top: 15px; }
     .btn-peligro:hover { background: #d63031; }
     
@@ -43,6 +53,7 @@
 </head>
 <body>
 
+  <!-- ACCESO CONTROLADO -->
   <div id="vistaLogin" class="login-container">
     <h2 style="color:#2c3e50; margin-top:0;">Acceso Administrativo</h2>
     <p style="color:#7f8c8d; font-size:0.9rem;">Ingrese sus credenciales de TuBingo Pro</p>
@@ -51,12 +62,14 @@
     <button id="btnLogin" onclick="validarAcceso()">Ingresar al Panel</button>
   </div>
 
+  <!-- PANEL PRINCIPAL -->
   <div id="vistaDashboard" class="dashboard">
     <header>
       <h2>Panel General de Control - TuBingo Pro</h2>
     </header>
     <main id="mainPanel">
       
+      <!-- Cuadrícula de Métricas -->
       <div class="tarjetas-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
         <div class="tarjeta total-box">
           <h3>Total Cartones</h3>
@@ -68,7 +81,7 @@
         </div>
         <div class="tarjeta" style="border-top: 4px solid #9b59b6;">
           <h3>Cliente con Más Cartones</h3>
-          <p id="txtClienteTop" style="font-size: 1.2rem; padding-top: 10px; color: #9b59b6; line-height: 1.2;">Cargando...</p>
+          <p id="txtClienteTop" style="font-size: 1.1rem; padding-top: 10px; color: #9b59b6; line-height: 1.2;">Cargando...</p>
         </div>
         <div class="tarjeta">
           <h3>Sectores Activos</h3>
@@ -76,6 +89,49 @@
         </div>
       </div>
 
+      <!-- NUEVA SECCIÓN: LISTADO CONSOLIDADO DE CLIENTES -->
+      <div class="seccion">
+        <h3>Resumen General de Clientes</h3>
+        <p style="font-size:0.85rem; color:#7f8c8d; margin-top:-5px;">Muestra el total de cartones acumulados por cada nombre y cuántos números telefónicos distintos usó.</p>
+        <div class="table-container">
+          <table id="tablaResumenClientes">
+            <thead>
+              <tr>
+                <th>Nombre del Cliente</th>
+                <th style="text-align: center;">Cartones Registrados</th>
+                <th style="text-align: center;">Números de Celular Usados</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="3" style="color:#999; text-align:center;">Cargando lista analítica...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- NUEVA SECCIÓN: VISUALIZACIÓN UNO A UNO Y EDICIÓN INDIVIDUAL -->
+      <div class="seccion">
+        <h3>Gestión Individual de Cartones (Uno por Uno)</h3>
+        <input type="text" id="inputBuscar" class="busqueda-input" oninput="filtrarCartones()" placeholder="🔍 Buscar por nombre de cliente, número de celular o serie de cartón...">
+        <div class="table-container">
+          <table id="tablaIndividualCartones">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Serie (Cartón)</th>
+                <th>Cliente</th>
+                <th>Celular</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="5" style="color:#999; text-align:center;">Cargando base de datos individual...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sectores Geográficos -->
       <div class="seccion">
         <h3>Mapeo de Registros por Sectores</h3>
         <table id="tablaSectores">
@@ -86,14 +142,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="2" style="color:#999;">Cargando datos demográficos...</td></tr>
+            <tr><td colspan="2" style="color:#999;">Cargando datos...</td></tr>
           </tbody>
         </table>
       </div>
 
+      <!-- Consola de Vaciamiento General -->
       <div class="seccion" style="border: 1px solid #ff7675;">
         <h3 style="color: #d63031;">Zona de Peligro (Cierre de Evento)</h3>
-        <p style="font-size:0.9rem; color:#636e72;">Al presionar el botón inferior, el sistema descargará de forma inmediata un archivo físico con el respaldo completo de las bases de datos y, posterior a ello, vaciará la tabla para el próximo sorteo de forma irreversible.</p>
+        <p style="font-size:0.9rem; color:#636e72;">Descarga el respaldo completo en CSV y vacía la base de datos de manera irreversible.</p>
         <button class="btn-peligro" onclick="procesarLimpiezaAbsoluta()">VACIAR TABLA DE BINGO (BORRADO TOTAL)</button>
       </div>
 
@@ -101,22 +158,18 @@
   </div>
 
   <script>
-    // CONTROL DE AUTENTICACIÓN DINÁMICA CON LA TABLA EN LA NUBE
+    let cacheRegistros = []; // Guardaremos la data localmente para hacer búsquedas instantáneas
+
     async function validarAcceso() {
       let u = document.getElementById("usuario").value.trim();
       let c = document.getElementById("clave").value.trim();
 
-      if (!u || !c) {
-        alert("Por favor rellene todos los campos.");
-        return;
-      }
-
+      if (!u || !c) { alert("Por favor rellene todos los campos."); return; }
       let btn = document.getElementById("btnLogin");
       btn.innerText = "Verificando credenciales...";
       btn.disabled = true;
 
       try {
-        // Valida usuario, contraseña y estado activo directamente en Supabase
         const { data: admin, error } = await _supabase
           .from('usuarios_admin')
           .select('*')
@@ -125,65 +178,53 @@
           .maybeSingle();
 
         if (error) throw error;
+        if (!admin) { alert("Usuario o contraseña incorrectos."); return; }
+        if (admin.activo === false) { alert("Usuario INHABILITADO del sistema."); return; }
 
-        if (!admin) {
-          alert("Usuario o contraseña incorrectos.");
-          return;
-        }
-
-        // Si el usuario existe pero el administrador lo inhabilitó (activo = false)
-        if (admin.activo === false) {
-          alert("Lo sentimos, este usuario administrador ha sido INHABILITADO del sistema.");
-          return;
-        }
-
-        // Logueado correctamente
         document.getElementById("vistaLogin").style.display = "none";
         document.getElementById("vistaDashboard").style.display = "block";
         cargarMetricasDelSistema();
 
       } catch (err) {
-        console.error(err);
-        alert("Error de autenticación con el servidor: " + err.message);
+        alert("Error: " + err.message);
       } finally {
         btn.innerText = "Ingresar al Panel";
         btn.disabled = false;
       }
     }
 
-    // CARGAR Y CALCULAR MÉTRICAS ANALÍTICAS EN TIEMPO REAL
     async function cargarMetricasDelSistema() {
       try {
-        // 1. Obtener los registros base para procesar en memoria del cliente
+        // Traer la data con el ID para poder modificar/eliminar después de uno en uno
         const { data: todosLosRegistros, error: errRegistros } = await _supabase
           .from('registros_bingo')
-          .select('carton, nombre, telefono');
+          .select('id, carton, nombre, telefono')
+          .order('id', { ascending: false });
 
         if (errRegistros) throw errRegistros;
+        cacheRegistros = todosLosRegistros || [];
 
-        let totalCartones = todosLosRegistros ? todosLosRegistros.length : 0;
-        let listaCelulares = new Set(); // El Set filtra repetidos automáticamente
-        let conteoNombres = {};
+        let totalCartones = cacheRegistros.length;
+        let listaCelulares = new Set();
+        let conteoNombres = {};   // { "JUAN PEREZ": cantidad_cartones }
+        let telefonosPorNombre = {}; // { "JUAN PEREZ": Set de teléfonos }
 
-        if (todosLosRegistros) {
-          todosLosRegistros.forEach(r => {
-            // Filtrar números de teléfonos únicos
-            if (r.telefono) {
-              listaCelulares.add(r.telefono.trim());
-            }
+        cacheRegistros.forEach(r => {
+          let t = r.telefono ? r.telefono.trim() : "";
+          let n = r.nombre ? r.nombre.trim().toUpperCase() : "SIN NOMBRE";
 
-            // Agrupar y contar frecuencias de nombres de clientes
-            if (r.nombre) {
-              let nombreLimpio = r.nombre.trim().toUpperCase();
-              conteoNombres[nombreLimpio] = (conteoNombres[nombreLimpio] || 0) + 1;
-            }
-          });
-        }
+          if (t) listaCelulares.add(t);
 
-        // Encontrar al cliente que más cartones ha registrado (Top Buyer)
-        let nombreMasRepetido = "Ninguno";
-        let maxCartones = 0;
+          // Contar cartones
+          conteoNombres[n] = (conteoNombres[n] || 0) + 1;
 
+          // Guardar teléfonos únicos por cada persona
+          if (!telefonosPorNombre[n]) telefonosPorNombre[n] = new Set();
+          if (t) telefonosPorNombre[n].add(t);
+        });
+
+        // Encontrar cliente Top
+        let nombreMasRepetido = "Ninguno", maxCartones = 0;
         for (let nombre in conteoNombres) {
           if (conteoNombres[nombre] > maxCartones) {
             maxCartones = conteoNombres[nombre];
@@ -191,97 +232,172 @@
           }
         }
 
-        // Imprimir las métricas calculadas en las tarjetas del dashboard
+        // Renderizar tarjetas superiores
         document.getElementById("txtTotalCartones").innerText = totalCartones;
         document.getElementById("txtTotalCelulares").innerText = listaCelulares.size;
-        
-        document.getElementById("txtClienteTop").innerHTML = 
-          maxCartones > 0 
-            ? `<strong style="font-size: 1.05rem; color:#2c3e50; word-break: break-word;">${nombreMasRepetido}</strong><br><span style="font-size:0.85rem; color:#7f8c8d; font-weight:normal;">(${maxCartones} cartones)</span>`
-            : "Ninguno";
+        document.getElementById("txtClienteTop").innerHTML = maxCartones > 0 
+          ? `<strong style="font-size:1rem; color:#2c3e50;">${nombreMasRepetido}</strong><br><span style="font-size:0.85rem; color:#7f8c8d;">(${maxCartones} cartones)</span>`
+          : "Ninguno";
 
-        // 2. Extraer estadísticas demográficas agrupadas de los sectores
-        const { data: sectores, error: errSectores } = await _supabase
-          .rpc('obtener_estadisticas_sectores');
+        // RENDERIZAR TABLA 1: RESUMEN CONSOLIDADO DE CLIENTES
+        let tbodyResumen = document.querySelector("#tablaResumenClientes tbody");
+        tbodyResumen.innerHTML = "";
+        if (Object.keys(conteoNombres).length === 0) {
+          tbodyResumen.innerHTML = `<tr><td colspan="3" style="color:#999; text-align:center;">No hay clientes registrados.</td></tr>`;
+        } else {
+          for (let nombre in conteoNombres) {
+            let fila = document.createElement("tr");
+            fila.innerHTML = `
+              <td><strong>${nombre}</strong></td>
+              <td style="text-align: center; font-weight: bold; color: #2ecc71;">${conteoNombres[nombre]}</td>
+              <td style="text-align: center; color: #3498db;">${telefonosPorNombre[nombre].size}</td>
+            `;
+            tbodyResumen.appendChild(fila);
+          }
+        }
 
+        // RENDERIZAR TABLA 2: VISTA INDIVIDUAL UNO POR UNO
+        renderizarTablaIndividual(cacheRegistros);
+
+        // TABLA 3: SECTORES
+        const { data: sectores, error: errSectores } = await _supabase.rpc('obtener_estadisticas_sectores');
         if (errSectores) throw errSectores;
 
         document.getElementById("txtTotalSectores").innerText = sectores ? sectores.length : 0;
-
-        // Pintar filas dinámicas de la tabla de sectores
-        let tbody = document.querySelector("#tablaSectores tbody");
-        tbody.innerHTML = "";
-
+        let tbodySectores = document.querySelector("#tablaSectores tbody");
+        tbodySectores.innerHTML = "";
         if (!sectores || sectores.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="2" style="color:#999; text-align:center;">No existen cartones registrados actualmente.</td></tr>`;
+          tbodySectores.innerHTML = `<tr><td colspan="2" style="color:#999; text-align:center;">Sin sectores registrados.</td></tr>`;
           return;
         }
-
         sectores.forEach(row => {
           let fila = document.createElement("tr");
-          fila.innerHTML = `
-            <td><strong>${row.sector || "No especificado"}</strong></td>
-            <td style="text-align: right; font-weight:bold; color:#2c3e50;">${row.total}</td>
-          `;
-          tbody.appendChild(fila);
+          fila.innerHTML = `<td><strong>${row.sector || "No especificado"}</strong></td><td style="text-align: right; font-weight:bold; color:#2c3e50;">${row.total}</td>`;
+          tbodySectores.appendChild(fila);
         });
 
       } catch (err) {
-        console.error("Error al renderizar métricas:", err);
-        alert("Error de sincronización con Supabase: " + err.message);
+        console.error(err);
       }
     }
 
-    // SISTEMA DE BORRADO INTEGRAL CON RESPALDO LOCAL OBLIGATORIO
-    async function procesarLimpiezaAbsoluta() {
-      let primeraPregunta = confirm("¿Está completamente seguro de que desea ELIMINAR TODOS los cartones del sistema?\n\nEsta acción borrará las bases de datos de forma permanente.");
-      if (!primeraPregunta) return;
+    // RENDERIZAR TABLA DE UNO EN UNO
+    function renderizarTablaIndividual(datos) {
+      let tbodyInd = document.querySelector("#tablaIndividualCartones tbody");
+      tbodyInd.innerHTML = "";
 
-      let confirmacionTexto = prompt("ALERTA DE SEGURIDAD:\nEscriba la palabra BORRAR en mayúsculas para proceder con la purga del sistema:");
-      if (confirmacionTexto !== "BORRAR") {
-        alert("Validación incorrecta. El borrado masivo ha sido cancelado.");
+      if (datos.length === 0) {
+        tbodyInd.innerHTML = `<tr><td colspan="5" style="color:#999; text-align:center;">No se encontraron cartones correlacionados.</td></tr>`;
         return;
       }
 
+      datos.forEach((r, index) => {
+        let fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${index + 1}</td>
+          <td><mark style="background:#eccc68; padding:2px 6px; border-radius:4px; font-weight:bold;">${r.carton}</mark></td>
+          <td>${r.nombre || "---"}</td>
+          <td>${r.telefono || "---"}</td>
+          <td>
+            <button class="btn-accion btn-modificar" onclick="modificarCartonIndividual(${r.id}, '${r.carton}', '${r.nombre}')">Modificar</button>
+            <button class="btn-accion btn-borrar-item" onclick="eliminarCartonIndividual(${r.id}, '${r.carton}', '${r.nombre}')">Eliminar</button>
+          </td>
+        `;
+        tbodyInd.appendChild(fila);
+      });
+    }
+
+    // BUSCADOR EN TIEMPO REAL
+    function filtrarCartones() {
+      let texto = document.getElementById("inputBuscar").value.toLowerCase().trim();
+      let filtrados = cacheRegistros.filter(r => 
+        (r.nombre && r.nombre.toLowerCase().includes(texto)) || 
+        (r.telefono && r.telefono.includes(texto)) || 
+        (r.carton && r.carton.toLowerCase().includes(texto))
+      );
+      renderizarTablaIndividual(filtrados);
+    }
+
+    // ACCIÓN: MODIFICAR UN CARTÓN INDIVIDUAL (CON PREGUNTA DE SEGURIDAD)
+    async function modificarCartonIndividual(id, cartonActual, cliente) {
+      let seguro = confirm(`¿Deseas MODIFICAR el cartón con código "${cartonActual}" perteneciente a ${cliente}?`);
+      if (!seguro) return;
+
+      let nuevoCodigo = prompt(`Modificando registro de ${cliente}.\n\nEscribe el NUEVO código de serie para este cartón (Actual: ${cartonActual}):`);
+      if (!nuevoCodigo) return;
+      nuevoCodigo = nuevoCodigo.trim();
+
+      if(nuevoCodigo === cartonActual) {
+        alert("El código ingresado es idéntico al actual. No se realizaron cambios.");
+        return;
+      }
+
+      document.getElementById("mainPanel").classList.add("loading");
+      try {
+        const { error } = await _supabase
+          .from('registros_bingo')
+          .update({ carton: nuevoCodigo })
+          .eq('id', id);
+
+        if (error) throw error;
+        alert("¡Cartón modificado exitosamente en la base de datos!");
+        cargarMetricasDelSistema();
+      } catch (err) {
+        alert("Error al actualizar el cartón: " + err.message);
+      } finally {
+        document.getElementById("mainPanel").classList.remove("loading");
+      }
+    }
+
+    // ACCIÓN: ELIMINAR UN CARTÓN INDIVIDUAL (CON PREGUNTA DE SEGURIDAD)
+    async function eliminarCartonIndividual(id, carton, cliente) {
+      let seguro = confirm(`⚠️ ATENCIÓN:\n¿Estás completamente seguro de que deseas ELIMINAR el cartón "${carton}" de ${cliente}?\n\nEsta acción quitará este cartón del sorteo.`);
+      if (!seguro) return;
+
+      document.getElementById("mainPanel").classList.add("loading");
+      try {
+        const { error } = await _supabase
+          .from('registros_bingo')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+        alert(`¡El cartón "${carton}" de ${cliente} fue eliminado correctamente!`);
+        cargarMetricasDelSistema();
+      } catch (err) {
+        alert("Error al eliminar el cartón: " + err.message);
+      } finally {
+        document.getElementById("mainPanel").classList.remove("loading");
+      }
+    }
+
+    // BORRADO MASIVO GENERAL
+    async function procesarLimpiezaAbsoluta() {
+      let primeraPregunta = confirm("¿Está seguro de eliminar TODO?");
+      if (!primeraPregunta) return;
+      let confirmacionTexto = prompt("Escriba BORRAR:");
+      if (confirmacionTexto !== "BORRAR") return;
+
       let elPanel = document.getElementById("mainPanel");
       elPanel.classList.add("loading");
-
       try {
-        // 1. Descarga preventiva de la data completa en formato CSV local
-        const { data: registrosCompletos, error: errDescarga } = await _supabase
-          .from('registros_bingo')
-          .select('carton, nombre, correo, telefono, ciudad, vendedor, creado_el');
-
-        if (errDescarga) throw errDescarga;
-
+        const { data: registrosCompletos } = await _supabase.from('registros_bingo').select('*');
         if (registrosCompletos && registrosCompletos.length > 0) {
-          let contenidoCSV = "data:text/csv;charset=utf-8,";
-          contenidoCSV += "Carton,Nombre,Correo,Telefono,Ubicacion,Vendedor,Fecha_Registro\n";
-          
-          registrosCompletos.forEach(r => {
-            contenidoCSV += `"${r.carton}","${r.nombre}","${r.correo}","${r.telefono}","${r.ciudad}","${r.vendedor}","${r.creado_el}"\n`;
-          });
-
+          let contenidoCSV = "data:text/csv;charset=utf-8,Carton,Nombre,Telefono\n";
+          registrosCompletos.forEach(r => { contenidoCSV += `"${r.carton}","${r.nombre}","${r.telefono}"\n`; });
           let encodedUri = encodeURI(contenidoCSV);
           let linkDescarga = document.createElement("a");
           linkDescarga.setAttribute("href", encodedUri);
-          linkDescarga.setAttribute("download", `RESPALDO_COMPLETO_BINGO_${new Date().toISOString().slice(0,10)}.csv`);
+          linkDescarga.setAttribute("download", `RESPALDO_BINGO.csv`);
           document.body.appendChild(linkDescarga);
           linkDescarga.click();
           document.body.removeChild(linkDescarga);
         }
-
-        // 2. Ejecución remota del vaciado masivo de la tabla
-        const { error: errTruncate } = await _supabase.rpc('vaciar_tabla_bingo');
-        if (errTruncate) throw errTruncate;
-
-        alert("¡Proceso Terminado!\nLa base de datos de cartones se ha vaciado por completo de manera exitosa. El archivo de respaldo se ha guardado en sus descargas.");
-        
-        // Refrescar el monitor de control
+        await _supabase.rpc('vaciar_tabla_bingo');
+        alert("Base de datos limpia.");
         cargarMetricasDelSistema();
-
       } catch (err) {
-        alert("Error crítico durante el vaciado: " + err.message);
+        alert(err.message);
       } finally {
         elPanel.classList.remove("loading");
       }
