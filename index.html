@@ -270,11 +270,11 @@
       let colReg = document.getElementById("colorRegistro").value;
       let colPan = document.getElementById("colorPanel").value;
 
-      // Validación para aceptar cualquier formato de imagen (incluyendo SVG)
+      // Validación para formatos de imagen tolerando parámetros dinámicos (?...)
       if (logoUrl !== "") {
         const expresionExtensiones = /\.(svg|png|jpg|jpeg|webp|gif)(\?.*)?$/i;
         if (!expresionExtensiones.test(logoUrl)) {
-          alert("⚠️ Formato de imagen no reconocido.\nPor favor ingresa un enlace que termine en .svg, .png, .jpg o .webp");
+          alert("⚠️ Formato de imagen no reconocido.\nPor favor ingresa un enlace que termine en .svg, .png, .jpg, .jpeg o .webp");
           return;
         }
       }
