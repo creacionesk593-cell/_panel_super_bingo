@@ -266,27 +266,50 @@
       } catch(e){ console.error(e); }
     }
 
-    async function guardarDisenoPersonalizado() {
-      let logoUrl = document.getElementById("inputLogoUrl").value.trim();
-      let colReg = document.getElementById("colorRegistro").value;
-      let colPan = document.getElementById("colorPanel").value;
+   
 
-      document.getElementById("mainPanel").classList.add("loading");
-      try {
-        await _supabase.from('configuracion_sistema').upsert({ clave: 'diseno_logo_url', valor: logoUrl });
-        await _supabase.from('configuracion_sistema').upsert({ clave: 'diseno_color_principal', valor: colReg });
-        await _supabase.from('configuracion_sistema').upsert({ clave: 'diseno_color_panel', valor: colPan });
-        
-        document.getElementById("panelHeader").style.background = colPan;
-        if(logoUrl !== "") {
-          let imgEl = document.getElementById("imgLogoPanel");
-          imgEl.src = logoUrl;
-          imgEl.style.display = "block";
-        }
-        alert("¡Diseño de marca actualizado e implementado globalmente!");
-      } catch(err) { alert("Error: " + err.message); }
-      finally { document.getElementById("mainPanel").classList.remove("loading"); }
+async function guardarDisenoPersonalizado() {
+  let logoUrl = document.getElementById("inputLogoUrl").value.trim();
+  let colReg = document.getElementById("colorRegistro").value;
+  let colPan = document.getElementById("colorPanel").value;
+
+  document.getElementById("mainPanel").classList.add("loading");
+  
+  // Agrupamos todas las filas en un solo bloque de datos para evitar colisiones
+  const filasAActualizar = [
+    { clave: 'diseno_logo_url', valor: logoUrl },
+    { clave: 'diseno_color_principal', valor: colReg },
+    { clave: 'diseno_color_panel', valor: colPan }
+  ];
+
+  try {
+    // Al pasarle un Array, Supabase actualiza las 3 filas en un solo viaje
+    const { error } = await _supabase
+      .from('configuracion_sistema')
+      .upsert(filasAActualizar, { onConflict: 'clave' });
+
+    if (error) throw error;
+    
+    // Aplicar los cambios visuales en el panel de inmediato
+    document.getElementById("panelHeader").style.background = colPan;
+    
+    let imgEl = document.getElementById("imgLogoPanel");
+    if (logoUrl !== "") {
+      imgEl.src = logoUrl;
+      imgEl.style.display = "block";
+    } else {
+      imgEl.style.display = "none";
     }
+    
+    alert("¡Diseño de marca guardado y actualizado con éxito!");
+  } catch (err) { 
+    alert("Error al guardar el diseño: " + err.message); 
+    console.error(err);
+  } finally { 
+    document.getElementById("mainPanel").classList.remove("loading"); 
+  }
+}
+
 
     async function cargarCodigoCanalActual() {
       const { data } = await _supabase.from('configuracion_sistema').select('valor').eq('clave', 'codigo_canal_whatsapp').maybeSingle();
