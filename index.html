@@ -273,9 +273,18 @@ async function guardarDisenoPersonalizado() {
   let colReg = document.getElementById("colorRegistro").value;
   let colPan = document.getElementById("colorPanel").value;
 
+  // Validación de formatos: Acepta SVG, PNG, JPG, JPEG, WEBP, GIF (Mayúsculas o minúsculas)
+  if (logoUrl !== "") {
+    const expresionExtensiones = /\.(svg|png|jpg|jpeg|webp|gif)(\?.*)?$/i;
+    if (!expresionExtensiones.test(logoUrl)) {
+      alert("⚠️ Formato de imagen no reconocido.\nPor favor, ingresa una URL válida que apunte a una imagen (SVG, PNG, JPG, JPEG o WEBP).");
+      return;
+    }
+  }
+
   document.getElementById("mainPanel").classList.add("loading");
   
-  // Agrupamos todas las filas en un solo bloque de datos para evitar colisiones
+  // Consolidamos los datos en un solo lote ordenado
   const filasAActualizar = [
     { clave: 'diseno_logo_url', valor: logoUrl },
     { clave: 'diseno_color_principal', valor: colReg },
@@ -283,14 +292,14 @@ async function guardarDisenoPersonalizado() {
   ];
 
   try {
-    // Al pasarle un Array, Supabase actualiza las 3 filas en un solo viaje
+    // Al solucionar el Paso 1, este viaje guardará todo sin errores
     const { error } = await _supabase
       .from('configuracion_sistema')
       .upsert(filasAActualizar, { onConflict: 'clave' });
 
     if (error) throw error;
     
-    // Aplicar los cambios visuales en el panel de inmediato
+    // Cambiar visualmente el panel al instante
     document.getElementById("panelHeader").style.background = colPan;
     
     let imgEl = document.getElementById("imgLogoPanel");
@@ -301,9 +310,9 @@ async function guardarDisenoPersonalizado() {
       imgEl.style.display = "none";
     }
     
-    alert("¡Diseño de marca guardado y actualizado con éxito!");
+    alert("🎉 ¡Diseño de marca y colores guardados exitosamente en la base de datos!");
   } catch (err) { 
-    alert("Error al guardar el diseño: " + err.message); 
+    alert("Error de guardado: " + err.message); 
     console.error(err);
   } finally { 
     document.getElementById("mainPanel").classList.remove("loading"); 
