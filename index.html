@@ -43,8 +43,12 @@
     .busqueda-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
     .config-flex { display: flex; gap: 15px; align-items: center; margin-top: 10px; }
     .config-flex input { flex: 1; padding: 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; font-weight: bold; text-transform: uppercase; color: #2c3e50; }
-    .config-flex button { width: auto; padding: 11px 25px; background: #3498db; }
-    .config-flex button:hover { background: #2980b9; }
+    
+    /* Variaciones de botones superiores */
+    .btn-azul { background: #3498db; width: auto; padding: 11px 25px; }
+    .btn-azul:hover { background: #2980b9; }
+    .btn-descarga { background: #34495e; width: auto; padding: 12px 22px; font-size: 15px; margin-bottom: 15px; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-descarga:hover { background: #2c3e50; }
 
     .btn-peligro { background: #ff7675; margin-top: 15px; }
     .btn-peligro:hover { background: #d63031; }
@@ -57,6 +61,7 @@
 </head>
 <body>
 
+  <!-- ACCESO CONTROLADO (VISTA DE LOGIN) -->
   <div id="vistaLogin" class="login-container">
     <h2 style="color:#2c3e50; margin-top:0;">Acceso Administrativo</h2>
     <p style="color:#7f8c8d; font-size:0.9rem;">Ingrese sus credenciales de TuBingo Pro</p>
@@ -65,12 +70,19 @@
     <button id="btnLogin" onclick="validarAcceso()">Ingresar al Panel</button>
   </div>
 
+  <!-- PANEL PRINCIPAL (VISTA DEL DASHBOARD) -->
   <div id="vistaDashboard" class="dashboard">
     <header>
       <h2>Panel General de Control - TuBingo Pro</h2>
     </header>
     <main id="mainPanel">
       
+      <!-- Fila de Descarga y Herramientas Rápidas -->
+      <div style="margin-bottom: 15px; display: flex; justify-content: flex-end;">
+        <button id="btnExportarCSV" class="btn-descarga" onclick="descargarBaseDatosCSV()">📊 Descargar Base de Datos (CSV)</button>
+      </div>
+
+      <!-- Cuadrícula de Métricas Superiores -->
       <div class="tarjetas-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
         <div class="tarjeta total-box">
           <h3>Total Cartones</h3>
@@ -90,15 +102,17 @@
         </div>
       </div>
 
+      <!-- SECCIÓN: CONTROL DEL CÓDIGO DEL CANAL DE WHATSAPP -->
       <div class="seccion" style="border-left: 5px solid #2ecc71;">
         <h3 style="color: #27ae60; margin-bottom: 5px;">🔑 Código Activo del Canal de WhatsApp</h3>
         <p style="font-size:0.85rem; color:#7f8c8d; margin: 0 0 10px 0;">El código que guardes aquí será el que exija obligatoriamente el formulario de los clientes para permitirles registrarse.</p>
         <div class="config-flex">
           <input type="text" id="inputCodigoAdmin" placeholder="Cargando código actual...">
-          <button onclick="actualizarCodigoCanal()">Actualizar Código</button>
+          <button class="btn-azul" onclick="actualizarCodigoCanal()">Actualizar Código</button>
         </div>
       </div>
 
+      <!-- SECCIÓN: LISTADO CONSOLIDADO DE CLIENTES -->
       <div class="seccion">
         <h3>Resumen General de Clientes</h3>
         <p style="font-size:0.85rem; color:#7f8c8d; margin-top:-5px;">Muestra el total de cartones acumulados por cada nombre y cuántos números telefónicos distintos usó.</p>
@@ -118,6 +132,7 @@
         </div>
       </div>
 
+      <!-- SECCIÓN: VISUALIZACIÓN UNO A UNO Y EDICIÓN INDIVIDUAL -->
       <div class="seccion">
         <h3>Gestión Individual de Cartones (Uno por Uno)</h3>
         <input type="text" id="inputBuscar" class="busqueda-input" oninput="filtrarCartones()" placeholder="🔍 Buscar por nombre de cliente, número de celular o serie de cartón...">
@@ -139,6 +154,7 @@
         </div>
       </div>
 
+      <!-- Sectores Geográficos -->
       <div class="seccion">
         <h3>Mapeo de Registros por Sectores</h3>
         <table id="tablaSectores">
@@ -154,6 +170,7 @@
         </table>
       </div>
 
+      <!-- Consola de Vaciamiento General -->
       <div class="seccion" style="border: 1px solid #ff7675;">
         <h3 style="color: #d63031;">Zona de Peligro (Cierre de Evento)</h3>
         <p style="font-size:0.9rem; color:#636e72;">Descarga el respaldo completo en CSV y vacía la base de datos de manera irreversible.</p>
@@ -226,7 +243,7 @@
       if (!nuevoCodigo) { alert("El código no puede estar vacío."); return; }
 
       let seguro = confirm(`¿Estás seguro de cambiar el código de validación del canal a: "${nuevoCodigo}"?`);
-      if (!seguro) return;
+      if (!safe) return;
 
       document.getElementById("mainPanel").classList.add("loading");
       try {
@@ -412,6 +429,64 @@
       }
     }
 
+    // ACCIÓN INTEGRADA: DESCARGAR BASE DE DATOS EN FORMATO CSV COMPATIBLE CON EXCEL
+    async function descargarBaseDatosCSV() {
+      const boton = document.getElementById("btnExportarCSV");
+      const textoOriginal = boton.innerText;
+      
+      try {
+        boton.disabled = true;
+        boton.innerText = "⏳ Generando CSV...";
+
+        const { data, error } = await _supabase
+          .from('registros_bingo')
+          .select('id, carton, nombre, telefono, correo, ciudad, vendedor, creado_en')
+          .order('id', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          alert("No hay ningún registro en la base de datos para descargar.");
+          return;
+        }
+
+        const encabezados = ["ID", "Carton (Serie)", "Nombre Completo", "Celular / Telefono", "Correo Electronico", "Ciudad - Direccion", "Vendedor", "Fecha de Registro"];
+        
+        const filasCSV = data.map(row => [
+          row.id,
+          `"${row.carton}"`, 
+          `"${row.nombre.replace(/"/g, '""')}"`, 
+          `"${row.telefono}"`,
+          `"${row.correo.replace(/"/g, '""')}"`,
+          `"${row.ciudad.replace(/"/g, '""')}"`,
+          `"${row.vendedor.replace(/"/g, '""')}"`,
+          `"${row.creado_en}"`
+        ]);
+
+        const contenidoCSV = "\uFEFF" + [encabezados.join(","), ...filasCSV.map(e => e.join(","))].join("\n");
+
+        const blob = new Blob([contenidoCSV], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        
+        const fechaHoy = new Date().toISOString().slice(0, 10);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `registros_tubingo_pro_${fechaHoy}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+      } catch (err) {
+        console.error("Error al exportar:", err);
+        alert("No se pudo exportar la base de datos: " + err.message);
+      } finally {
+        boton.disabled = false;
+        boton.innerText = textoOriginal;
+      }
+    }
+
     async function procesarLimpiezaAbsoluta() {
       let primeraPregunta = confirm("¿Está seguro de eliminar TODO?");
       if (!primeraPregunta) return;
@@ -421,18 +496,7 @@
       let elPanel = document.getElementById("mainPanel");
       elPanel.classList.add("loading");
       try {
-        const { data: registrosCompletos } = await _supabase.from('registros_bingo').select('*');
-        if (registrosCompletos && registrosCompletos.length > 0) {
-          let contenidoCSV = "data:text/csv;charset=utf-8,Carton,Nombre,Telefono\n";
-          registrosCompletos.forEach(r => { contenidoCSV += `"${r.carton}","${r.nombre}","${r.telefono}"\n`; });
-          let encodedUri = encodeURI(contenidoCSV);
-          let linkDescarga = document.createElement("a");
-          linkDescarga.setAttribute("href", encodedUri);
-          linkDescarga.setAttribute("download", `RESPALDO_BINGO.csv`);
-          document.body.appendChild(linkDescarga);
-          linkDescarga.click();
-          document.body.removeChild(linkDescarga);
-        }
+        await descargarBaseDatosCSV(); // Respaldo forzado antes de borrar
         await _supabase.rpc('vaciar_tabla_bingo');
         alert("Base de datos limpia.");
         cargarMetricasDelSistema();
