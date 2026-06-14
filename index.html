@@ -39,8 +39,12 @@
     .btn-borrar-item { background: #ff7675; color: white; }
     .btn-borrar-item:hover { background: #e84393; }
 
-    /* Buscador */
+    /* Inputs de Configuración y Búsqueda */
     .busqueda-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+    .config-flex { display: flex; gap: 15px; align-items: center; margin-top: 10px; }
+    .config-flex input { flex: 1; padding: 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; font-weight: bold; text-transform: uppercase; color: #2c3e50; }
+    .config-flex button { width: auto; padding: 11px 25px; background: #3498db; }
+    .config-flex button:hover { background: #2980b9; }
 
     .btn-peligro { background: #ff7675; margin-top: 15px; }
     .btn-peligro:hover { background: #d63031; }
@@ -53,7 +57,6 @@
 </head>
 <body>
 
-  <!-- ACCESO CONTROLADO -->
   <div id="vistaLogin" class="login-container">
     <h2 style="color:#2c3e50; margin-top:0;">Acceso Administrativo</h2>
     <p style="color:#7f8c8d; font-size:0.9rem;">Ingrese sus credenciales de TuBingo Pro</p>
@@ -62,14 +65,12 @@
     <button id="btnLogin" onclick="validarAcceso()">Ingresar al Panel</button>
   </div>
 
-  <!-- PANEL PRINCIPAL -->
   <div id="vistaDashboard" class="dashboard">
     <header>
       <h2>Panel General de Control - TuBingo Pro</h2>
     </header>
     <main id="mainPanel">
       
-      <!-- Cuadrícula de Métricas -->
       <div class="tarjetas-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
         <div class="tarjeta total-box">
           <h3>Total Cartones</h3>
@@ -89,7 +90,15 @@
         </div>
       </div>
 
-      <!-- NUEVA SECCIÓN: LISTADO CONSOLIDADO DE CLIENTES -->
+      <div class="seccion" style="border-left: 5px solid #2ecc71;">
+        <h3 style="color: #27ae60; margin-bottom: 5px;">🔑 Código Activo del Canal de WhatsApp</h3>
+        <p style="font-size:0.85rem; color:#7f8c8d; margin: 0 0 10px 0;">El código que guardes aquí será el que exija obligatoriamente el formulario de los clientes para permitirles registrarse.</p>
+        <div class="config-flex">
+          <input type="text" id="inputCodigoAdmin" placeholder="Cargando código actual...">
+          <button onclick="actualizarCodigoCanal()">Actualizar Código</button>
+        </div>
+      </div>
+
       <div class="seccion">
         <h3>Resumen General de Clientes</h3>
         <p style="font-size:0.85rem; color:#7f8c8d; margin-top:-5px;">Muestra el total de cartones acumulados por cada nombre y cuántos números telefónicos distintos usó.</p>
@@ -109,7 +118,6 @@
         </div>
       </div>
 
-      <!-- NUEVA SECCIÓN: VISUALIZACIÓN UNO A UNO Y EDICIÓN INDIVIDUAL -->
       <div class="seccion">
         <h3>Gestión Individual de Cartones (Uno por Uno)</h3>
         <input type="text" id="inputBuscar" class="busqueda-input" oninput="filtrarCartones()" placeholder="🔍 Buscar por nombre de cliente, número de celular o serie de cartón...">
@@ -131,7 +139,6 @@
         </div>
       </div>
 
-      <!-- Sectores Geográficos -->
       <div class="seccion">
         <h3>Mapeo de Registros por Sectores</h3>
         <table id="tablaSectores">
@@ -147,7 +154,6 @@
         </table>
       </div>
 
-      <!-- Consola de Vaciamiento General -->
       <div class="seccion" style="border: 1px solid #ff7675;">
         <h3 style="color: #d63031;">Zona de Peligro (Cierre de Evento)</h3>
         <p style="font-size:0.9rem; color:#636e72;">Descarga el respaldo completo en CSV y vacía la base de datos de manera irreversible.</p>
@@ -158,7 +164,7 @@
   </div>
 
   <script>
-    let cacheRegistros = []; // Guardaremos la data localmente para hacer búsquedas instantáneas
+    let cacheRegistros = []; // Resguardo en memoria local para búsquedas ultra veloces
 
     async function validarAcceso() {
       let u = document.getElementById("usuario").value.trim();
@@ -183,7 +189,10 @@
 
         document.getElementById("vistaLogin").style.display = "none";
         document.getElementById("vistaDashboard").style.display = "block";
+        
+        // Cargar todo el ecosistema del panel
         cargarMetricasDelSistema();
+        cargarCodigoCanalActual();
 
       } catch (err) {
         alert("Error: " + err.message);
@@ -193,9 +202,50 @@
       }
     }
 
+    // EXTRAER EL CÓDIGO SECRETO ACTUAL PARA MOSTRARLO EN LA CASILLA
+    async function cargarCodigoCanalActual() {
+      try {
+        const { data, error } = await _supabase
+          .from('configuracion_sistema')
+          .select('valor')
+          .eq('clave', 'codigo_canal_whatsapp')
+          .maybeSingle();
+
+        if (error) throw error;
+        if (data) {
+          document.getElementById("inputCodigoAdmin").value = data.valor;
+        }
+      } catch (err) {
+        console.error("Error al leer código de WhatsApp:", err);
+      }
+    }
+
+    // ACCIÓN: ACTUALIZAR EL CÓDIGO SECRETO DESDE EL PANEL EN UN CLICK
+    async function actualizarCodigoCanal() {
+      let nuevoCodigo = document.getElementById("inputCodigoAdmin").value.trim().toUpperCase();
+      if (!nuevoCodigo) { alert("El código no puede estar vacío."); return; }
+
+      let seguro = confirm(`¿Estás seguro de cambiar el código de validación del canal a: "${nuevoCodigo}"?`);
+      if (!seguro) return;
+
+      document.getElementById("mainPanel").classList.add("loading");
+      try {
+        const { error } = await _supabase
+          .from('configuracion_sistema')
+          .upsert({ clave: 'codigo_canal_whatsapp', valor: nuevoCodigo });
+
+        if (error) throw error;
+        alert(`¡Éxito! El código se actualizó a "${nuevoCodigo}". Tus formularios públicos ya están exigiendo esta clave.`);
+      } catch (err) {
+        alert("Error al actualizar configuración: " + err.message);
+      } finally {
+        document.getElementById("mainPanel").classList.remove("loading");
+      }
+    }
+
+    // CARGAR Y CALCULAR MÉTRICAS ANALÍTICAS EN TIEMPO REAL
     async function cargarMetricasDelSistema() {
       try {
-        // Traer la data con el ID para poder modificar/eliminar después de uno en uno
         const { data: todosLosRegistros, error: errRegistros } = await _supabase
           .from('registros_bingo')
           .select('id, carton, nombre, telefono')
@@ -206,8 +256,8 @@
 
         let totalCartones = cacheRegistros.length;
         let listaCelulares = new Set();
-        let conteoNombres = {};   // { "JUAN PEREZ": cantidad_cartones }
-        let telefonosPorNombre = {}; // { "JUAN PEREZ": Set de teléfonos }
+        let conteoNombres = {};
+        let telefonosPorNombre = {};
 
         cacheRegistros.forEach(r => {
           let t = r.telefono ? r.telefono.trim() : "";
@@ -215,15 +265,12 @@
 
           if (t) listaCelulares.add(t);
 
-          // Contar cartones
           conteoNombres[n] = (conteoNombres[n] || 0) + 1;
 
-          // Guardar teléfonos únicos por cada persona
           if (!telefonosPorNombre[n]) telefonosPorNombre[n] = new Set();
           if (t) telefonosPorNombre[n].add(t);
         });
 
-        // Encontrar cliente Top
         let nombreMasRepetido = "Ninguno", maxCartones = 0;
         for (let nombre in conteoNombres) {
           if (conteoNombres[nombre] > maxCartones) {
@@ -232,14 +279,13 @@
           }
         }
 
-        // Renderizar tarjetas superiores
         document.getElementById("txtTotalCartones").innerText = totalCartones;
         document.getElementById("txtTotalCelulares").innerText = listaCelulares.size;
         document.getElementById("txtClienteTop").innerHTML = maxCartones > 0 
           ? `<strong style="font-size:1rem; color:#2c3e50;">${nombreMasRepetido}</strong><br><span style="font-size:0.85rem; color:#7f8c8d;">(${maxCartones} cartones)</span>`
           : "Ninguno";
 
-        // RENDERIZAR TABLA 1: RESUMEN CONSOLIDADO DE CLIENTES
+        // RENDERIZAR TABLA RESUMEN DE CLIENTES CON TOTALES
         let tbodyResumen = document.querySelector("#tablaResumenClientes tbody");
         tbodyResumen.innerHTML = "";
         if (Object.keys(conteoNombres).length === 0) {
@@ -256,10 +302,9 @@
           }
         }
 
-        // RENDERIZAR TABLA 2: VISTA INDIVIDUAL UNO POR UNO
         renderizarTablaIndividual(cacheRegistros);
 
-        // TABLA 3: SECTORES
+        // TABLA SECTORES
         const { data: sectores, error: errSectores } = await _supabase.rpc('obtener_estadisticas_sectores');
         if (errSectores) throw errSectores;
 
@@ -281,7 +326,6 @@
       }
     }
 
-    // RENDERIZAR TABLA DE UNO EN UNO
     function renderizarTablaIndividual(datos) {
       let tbodyInd = document.querySelector("#tablaIndividualCartones tbody");
       tbodyInd.innerHTML = "";
@@ -307,7 +351,6 @@
       });
     }
 
-    // BUSCADOR EN TIEMPO REAL
     function filtrarCartones() {
       let texto = document.getElementById("inputBuscar").value.toLowerCase().trim();
       let filtrados = cacheRegistros.filter(r => 
@@ -318,7 +361,6 @@
       renderizarTablaIndividual(filtrados);
     }
 
-    // ACCIÓN: MODIFICAR UN CARTÓN INDIVIDUAL (CON PREGUNTA DE SEGURIDAD)
     async function modificarCartonIndividual(id, cartonActual, cliente) {
       let seguro = confirm(`¿Deseas MODIFICAR el cartón con código "${cartonActual}" perteneciente a ${cliente}?`);
       if (!seguro) return;
@@ -328,7 +370,7 @@
       nuevoCodigo = nuevoCodigo.trim();
 
       if(nuevoCodigo === cartonActual) {
-        alert("El código ingresado es idéntico al actual. No se realizaron cambios.");
+        alert("El código ingresado es idéntico al actual.");
         return;
       }
 
@@ -340,16 +382,15 @@
           .eq('id', id);
 
         if (error) throw error;
-        alert("¡Cartón modificado exitosamente en la base de datos!");
+        alert("¡Cartón modificado con éxito!");
         cargarMetricasDelSistema();
       } catch (err) {
-        alert("Error al actualizar el cartón: " + err.message);
+        alert("Error al actualizar: " + err.message);
       } finally {
         document.getElementById("mainPanel").classList.remove("loading");
       }
     }
 
-    // ACCIÓN: ELIMINAR UN CARTÓN INDIVIDUAL (CON PREGUNTA DE SEGURIDAD)
     async function eliminarCartonIndividual(id, carton, cliente) {
       let seguro = confirm(`⚠️ ATENCIÓN:\n¿Estás completamente seguro de que deseas ELIMINAR el cartón "${carton}" de ${cliente}?\n\nEsta acción quitará este cartón del sorteo.`);
       if (!seguro) return;
@@ -362,16 +403,15 @@
           .eq('id', id);
 
         if (error) throw error;
-        alert(`¡El cartón "${carton}" de ${cliente} fue eliminado correctamente!`);
+        alert(`¡El cartón "${carton}" de ${cliente} fue eliminado!`);
         cargarMetricasDelSistema();
       } catch (err) {
-        alert("Error al eliminar el cartón: " + err.message);
+        alert("Error al eliminar: " + err.message);
       } finally {
         document.getElementById("mainPanel").classList.remove("loading");
       }
     }
 
-    // BORRADO MASIVO GENERAL
     async function procesarLimpiezaAbsoluta() {
       let primeraPregunta = confirm("¿Está seguro de eliminar TODO?");
       if (!primeraPregunta) return;
