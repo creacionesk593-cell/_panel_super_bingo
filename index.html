@@ -110,14 +110,13 @@
         </div>
       </div>
 
-      <!-- SECCIÓN AÑADIDA DESDE EL PANEL 9: PERSONALIZACIÓN DE DISEÑO Y MARCA -->
       <div class="seccion" style="border-left: 5px solid #9b59b6;">
         <h3 style="color: #8e44ad;">🎨 Paleta de Diseño y Marca Personalizada</h3>
-        <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom: 15px;">Cambia la apariencia del Registro de Clientes y de este Panel de Control en tiempo real de forma centralizada.</p>
+        <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom: 15px;">Cambia la apariencia del Registro de Clientes (acepta SVG, PNG, JPG, WEBP) y de este Panel de Control.</p>
         
         <div style="margin-bottom: 15px;">
           <label style="font-weight: bold; font-size: 0.9rem; display:block; margin-bottom:5px;">Enlace (URL) de tu Logotipo:</label>
-          <input type="text" id="inputLogoUrl" class="busqueda-input" style="margin-bottom:0;" placeholder="https://tuservidor.com/imagen.png">
+          <input type="text" id="inputLogoUrl" class="busqueda-input" style="margin-bottom:0;" placeholder="https://tuservidor.com/imagen.png o .svg">
         </div>
 
         <div class="diseno-grid">
@@ -125,7 +124,7 @@
             <input type="color" id="colorRegistro" value="#4CAF50">
             <div>
               <strong style="font-size:0.9rem; display:block;">Color Global Registro</strong>
-              <small style="color:#7f8c8d;">Formulario Público e hilos</small>
+              <small style="color:#7f8c8d;">Formulario Público</small>
             </div>
           </div>
           <div class="color-picker-wrapper">
@@ -266,59 +265,51 @@
       } catch(e){ console.error(e); }
     }
 
-   
+    async function guardarDisenoPersonalizado() {
+      let logoUrl = document.getElementById("inputLogoUrl").value.trim();
+      let colReg = document.getElementById("colorRegistro").value;
+      let colPan = document.getElementById("colorPanel").value;
 
-async function guardarDisenoPersonalizado() {
-  let logoUrl = document.getElementById("inputLogoUrl").value.trim();
-  let colReg = document.getElementById("colorRegistro").value;
-  let colPan = document.getElementById("colorPanel").value;
+      // Validación para aceptar cualquier formato de imagen (incluyendo SVG)
+      if (logoUrl !== "") {
+        const expresionExtensiones = /\.(svg|png|jpg|jpeg|webp|gif)(\?.*)?$/i;
+        if (!expresionExtensiones.test(logoUrl)) {
+          alert("⚠️ Formato de imagen no reconocido.\nPor favor ingresa un enlace que termine en .svg, .png, .jpg o .webp");
+          return;
+        }
+      }
 
-  // Validación de formatos: Acepta SVG, PNG, JPG, JPEG, WEBP, GIF (Mayúsculas o minúsculas)
-  if (logoUrl !== "") {
-    const expresionExtensiones = /\.(svg|png|jpg|jpeg|webp|gif)(\?.*)?$/i;
-    if (!expresionExtensiones.test(logoUrl)) {
-      alert("⚠️ Formato de imagen no reconocido.\nPor favor, ingresa una URL válida que apunte a una imagen (SVG, PNG, JPG, JPEG o WEBP).");
-      return;
+      document.getElementById("mainPanel").classList.add("loading");
+      
+      const filasAActualizar = [
+        { clave: 'diseno_logo_url', valor: logoUrl },
+        { clave: 'diseno_color_principal', valor: colReg },
+        { clave: 'diseno_color_panel', valor: colPan }
+      ];
+
+      try {
+        const { error } = await _supabase
+          .from('configuracion_sistema')
+          .upsert(filasAActualizar, { onConflict: 'clave' });
+
+        if (error) throw error;
+        
+        document.getElementById("panelHeader").style.background = colPan;
+        let imgEl = document.getElementById("imgLogoPanel");
+        if(logoUrl !== "") {
+          imgEl.src = logoUrl;
+          imgEl.style.display = "block";
+        } else {
+          imgEl.style.display = "none";
+        }
+        alert("🎉 ¡Diseño de marca y colores guardados exitosamente!");
+      } catch(err) { 
+        alert("Error de guardado: " + err.message); 
+        console.error(err);
+      } finally { 
+        document.getElementById("mainPanel").classList.remove("loading"); 
+      }
     }
-  }
-
-  document.getElementById("mainPanel").classList.add("loading");
-  
-  // Consolidamos los datos en un solo lote ordenado
-  const filasAActualizar = [
-    { clave: 'diseno_logo_url', valor: logoUrl },
-    { clave: 'diseno_color_principal', valor: colReg },
-    { clave: 'diseno_color_panel', valor: colPan }
-  ];
-
-  try {
-    // Al solucionar el Paso 1, este viaje guardará todo sin errores
-    const { error } = await _supabase
-      .from('configuracion_sistema')
-      .upsert(filasAActualizar, { onConflict: 'clave' });
-
-    if (error) throw error;
-    
-    // Cambiar visualmente el panel al instante
-    document.getElementById("panelHeader").style.background = colPan;
-    
-    let imgEl = document.getElementById("imgLogoPanel");
-    if (logoUrl !== "") {
-      imgEl.src = logoUrl;
-      imgEl.style.display = "block";
-    } else {
-      imgEl.style.display = "none";
-    }
-    
-    alert("🎉 ¡Diseño de marca y colores guardados exitosamente en la base de datos!");
-  } catch (err) { 
-    alert("Error de guardado: " + err.message); 
-    console.error(err);
-  } finally { 
-    document.getElementById("mainPanel").classList.remove("loading"); 
-  }
-}
-
 
     async function cargarCodigoCanalActual() {
       const { data } = await _supabase.from('configuracion_sistema').select('valor').eq('clave', 'codigo_canal_whatsapp').maybeSingle();
@@ -328,7 +319,7 @@ async function guardarDisenoPersonalizado() {
     async function actualizarCodigoCanal() {
       let nuevoCodigo = document.getElementById("inputCodigoAdmin").value.trim().toUpperCase();
       if (!nuevoCodigo) return;
-      await _supabase.from('configuracion_sistema').upsert({ clave: 'codigo_canal_whatsapp', valor: nuevoCodigo });
+      await _supabase.from('configuracion_sistema').upsert({ clave: 'codigo_canal_whatsapp', valor: nuevoCodigo }, { onConflict: 'clave' });
       alert(`¡Éxito! El código se actualizó a "${nuevoCodigo}".`);
     }
 
