@@ -375,55 +375,57 @@
       }
     }
 
-    /* GUARDAR DATOS CORREGIDOS EN LA TABLA CONFIGURACION */
-    async function guardarConfiguracionGlobalTable() {
-      let limCartones = document.getElementById("inputLimCartonesGlobal").value;
-      let carQr = document.getElementById("inputCaracteresQrGlobal").value;
-      let fechaCierre = document.getElementById("inputFechaCierreGlobal").value;
+    
+/* GUARDAR DATOS CORREGIDOS EN LA TABLA CONFIGURACION */
+async function guardarConfiguracionGlobalTable() {
+  let limCartones = document.getElementById("inputLimCartonesGlobal").value;
+  let carQr = document.getElementById("inputCaracteresQrGlobal").value;
+  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Viene como: YYYY-MM-DDTHH:MM
 
-      if (!limCartones || !carQr || !fechaCierre) {
-        alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
-        return;
-      }
+  if (!limCartones || !carQr || !fechaCierre) {
+    alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
+    return;
+  }
 
-      let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
-                                `• Límite de Cartones: ${limCartones}\n` +
-                                `• Caracteres QR: ${carQr}\n` +
-                                `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
-                                `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
+  let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
+                            `• Límite de Cartones: ${limCartones}\n` +
+                            `• Caracteres QR: ${carQr}\n` +
+                            `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
+                            `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
 
-      if (!confirm(mensajeConfirmacion)) {
-        return; 
-      }
+  if (!confirm(mensajeConfirmacion)) {
+    return; 
+  }
 
-      document.getElementById("mainPanel").classList.add("loading");
+  document.getElementById("mainPanel").classList.add("loading");
 
-      try {
-        // SOLUCIÓN DEFINITIVA DE HUSO HORARIO (Ecuador UTC -5)
-        // Convertimos la selección local a una cadena de fecha ISO real interpretada sin mutaciones
-        let fechaObjeto = new Date(fechaCierre);
-        let isoStringConZonaHoraria = new Date(fechaObjeto.getTime() - (fechaObjeto.getTimezoneOffset() * 60000)).toISOString();
+  try {
+    // FORMATEO SEGURO PARA POSTGRESQL (Remueve la 'T' y añade segundos manuales limpios)
+    // Esto transforma "2026-06-14T19:44" en "2026-06-14 19:44:00"
+    let fechaLimpiaPostgres = fechaCierre.replace("T", " ") + ":00";
 
-        const { error } = await _supabase
-          .from('configuracion')
-          .update({
-            limite_cartones: Number(limCartones),
-            caracteres_qr: Number(carQr),
-            fecha_cierre: isoStringConZonaHoraria
-          })
-          .eq('id', 1);
+    const { error } = await _supabase
+      .from('configuracion')
+      .update({
+        limite_cartones: Number(limCartones),
+        caracteres_qr: Number(carQr),
+        fecha_cierre: fechaLimpiaPostgres // Enviado en formato plano estándar de marcas de tiempo
+      })
+      .eq('id', 1);
 
-        if (error) throw error;
-        
-        alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
-        
-      } catch (err) {
-        alert("❌ Error al guardar en la base de datos: " + err.message);
-        console.error("Detalle del error:", err);
-      } finally {
-        document.getElementById("mainPanel").classList.remove("loading");
-      }
-    }
+    if (error) throw error;
+    
+    alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
+    
+  } catch (err) {
+    alert("❌ Error al guardar en la base de datos: " + err.message);
+    console.error("Detalle del error:", err);
+  } finally {
+    document.getElementById("mainPanel").classList.remove("loading");
+  }
+}
+
+
 
     async function cargarMetricasDelSistema() {
       try {
