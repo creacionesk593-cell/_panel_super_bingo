@@ -376,6 +376,9 @@
     }
 
     
+
+
+
 /* GUARDAR DATOS CORREGIDOS EN LA TABLA CONFIGURACION */
 async function guardarConfiguracionGlobalTable() {
   let limCartones = document.getElementById("inputLimCartonesGlobal").value;
@@ -400,8 +403,7 @@ async function guardarConfiguracionGlobalTable() {
   document.getElementById("mainPanel").classList.add("loading");
 
   try {
-    // FORMATEO SEGURO PARA POSTGRESQL (Remueve la 'T' y añade segundos manuales limpios)
-    // Esto transforma "2026-06-14T19:44" en "2026-06-14 19:44:00"
+    // Formateamos la fecha limpia quitando la 'T' para que PostgreSQL la asimile directo
     let fechaLimpiaPostgres = fechaCierre.replace("T", " ") + ":00";
 
     const { error } = await _supabase
@@ -409,7 +411,7 @@ async function guardarConfiguracionGlobalTable() {
       .update({
         limite_cartones: Number(limCartones),
         caracteres_qr: Number(carQr),
-        fecha_cierre: fechaLimpiaPostgres // Enviado en formato plano estándar de marcas de tiempo
+        fechacierre: fechaLimpiaPostgres // Corregido: 'fechacierre' sin guion bajo, igual a tu tabla
       })
       .eq('id', 1);
 
