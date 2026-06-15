@@ -382,46 +382,46 @@
 async function guardarConfiguracionGlobalTable() {
   let limCartones = document.getElementById("inputLimCartonesGlobal").value;
   let carQr = document.getElementById("inputCaracteresQrGlobal").value;
-  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato del input: YYYY-MM-DDTHH:MM
+  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato nativo: YYYY-MM-DDTHH:MM
 
   if (!limCartones || !carQr || !fechaCierre) {
     alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
     return;
   }
 
-  // Mensaje de confirmación para evitar cambios accidentales
+  // Cuadro de confirmación de seguridad para evitar errores
   let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
-                            `• Límite de Cartones Global: ${limCartones}\n` +
-                            `• Caracteres QR Requeridos: ${carQr}\n` +
-                            `• Fecha y Hora de Cierre (Ecuador): ${fechaCierre.replace("T", " ")}\n\n` +
+                            `• Límite de Cartones: ${limCartones}\n` +
+                            `• Caracteres QR: ${carQr}\n` +
+                            `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
                             `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
 
   if (!confirm(mensajeConfirmacion)) {
-    return; // Cancela la operación si el usuario no acepta
+    return; // Si cancela, no hace nada
   }
 
   document.getElementById("mainPanel").classList.add("loading");
 
-  try {
-    // Reemplazamos la "T" del input de HTML por un espacio para que PostgreSQL lo procese directo como Timestamp
-    let fechaFormateadaParaDB = fechaCierre.replace("T", " ") + ":00";
+  // Reemplazamos la "T" que genera el HTML por un espacio limpio para que Postgres lo tome como TIMESTAMP directo
+  let fechaLimpia = fechaCierre.replace("T", " ") + ":00";
 
-    // ACTUALIZACIÓN DIRECTA EN LA TABLA CORRECTA ('configuracion') EN LA FILA ID: 1
+  try {
+    // ENVIAR ACTUALIZACIÓN DIRECTA A LA TABLA 'configuracion'
     const { error } = await _supabase
       .from('configuracion')
       .update({
         limite_cartones: parseInt(limCartones),
         caracteres_qr: parseInt(carQr),
-        fecha_cierre: fechaFormateadaParaDB // Columna exacta de tu base de datos
+        fecha_cierre: fechaLimpia
       })
-      .eq('id', 1);
+      .eq('id', 1); // Apunta estrictamente a tu fila con ID 1
 
     if (error) throw error;
     
-    alert("🎉 ¡Parámetros globales guardados con éxito en la tabla de configuraciones!");
+    alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
     
   } catch (err) {
-    alert("❌ Error crítico al guardar en la tabla configuracion: " + err.message);
+    alert("❌ Error al guardar en la base de datos: " + err.message);
     console.error(err);
   } finally {
     document.getElementById("mainPanel").classList.remove("loading");
