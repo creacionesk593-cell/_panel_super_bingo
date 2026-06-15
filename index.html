@@ -118,7 +118,7 @@
 
       <div class="seccion" style="border-left: 5px solid #9b59b6;">
         <h3 style="color: #8e44ad;">🎨 Paleta de Diseño y Marca Personalizada</h3>
-        <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom: 15px;">Cambia la apariencia del Registro de Clientes (acepta SVG, PNG, JPG, WEBP) and de este Panel de Control.</p>
+        <p style="font-size:0.85rem; color:#7f8c8d; margin-bottom: 15px;">Cambia la apariencia del Registro de Clientes (acepta SVG, PNG, JPG, WEBP) y de este Panel de Control.</p>
         
         <div style="margin-bottom: 15px;">
           <label style="font-weight: bold; font-size: 0.9rem; display:block; margin-bottom:5px;">Enlace (URL) de tu Logotipo:</label>
@@ -233,7 +233,7 @@
 
       <div class="seccion" style="border: 1px solid #ff7675;">
         <h3 style="color: #d63031;">Zona de Peligro (Cierre de Evento)</h3>
-        <p style="font-size:0.9rem; color:#636e72;">Descarga el respaldo completo en Excel and vacía la base de datos de manera irreversible.</p>
+        <p style="font-size:0.9rem; color:#636e72;">Descarga el respaldo completo en Excel y vacía la base de datos de manera irreversible.</p>
         <button class="btn-peligro" onclick="procesarLimpiezaAbsoluta()">VACIAR TABLA DE BINGO (BORRADO TOTAL)</button>
       </div>
 
@@ -337,98 +337,6 @@
         document.getElementById("mainPanel").classList.remove("loading"); 
       }
     }
-
-    async function cargarCodigoCanalActual() {
-      const { data } = await _supabase.from('configuracion_sistema').select('valor').eq('clave', 'codigo_canal_whatsapp').maybeSingle();
-      if (data) document.getElementById("inputCodigoAdmin").value = data.valor;
-    }
-
-    async function actualizarCodigoCanal() {
-      let nuevoCodigo = document.getElementById("inputCodigoAdmin").value.trim().toUpperCase();
-      if (!nuevoCodigo) return;
-      await _supabase.from('configuracion_sistema').upsert({ clave: 'codigo_canal_whatsapp', valor: nuevoCodigo }, { onConflict: 'clave' });
-      alert(`¡Éxito! El código se actualizó a "${nuevoCodigo}".`);
-    }
-
-    /* CARGAR DATOS DE LA TABLA CONFIGURACION */
-    async function cargarConfiguracionGlobalTable() {
-      try {
-        const { data, error } = await _supabase.from('configuracion').select('*').eq('id', 1).maybeSingle();
-        if (error) throw error;
-        if (data) {
-          document.getElementById("inputLimCartonesGlobal").value = data.limite_cartones;
-          document.getElementById("inputCaracteresQrGlobal").value = data.caracteres_qr;
-          
-          if (data.fecha_cierre) {
-            let d = new Date(data.fecha_cierre);
-            let year = d.getFullYear();
-            let month = String(d.getMonth() + 1).padStart(2, '0');
-            let day = String(d.getDate()).padStart(2, '0');
-            let hours = String(d.getHours()).padStart(2, '0');
-            let minutes = String(d.getMinutes()).padStart(2, '0');
-            
-            document.getElementById("inputFechaCierreGlobal").value = `${year}-${month}-${day}T${hours}:${minutes}`;
-          }
-        }
-      } catch (err) {
-        console.error("Error cargando tabla configuracion:", err.message);
-      }
-    }
-
-    
-
-
-
-/* GUARDAR DATOS CORREGIDOS EN LA TABLA CONFIGURACION */
-async function guardarConfiguracionGlobalTable() {
-  let limCartones = document.getElementById("inputLimCartonesGlobal").value;
-  let carQr = document.getElementById("inputCaracteresQrGlobal").value;
-  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato HTML: YYYY-MM-DDTHH:MM
-
-  if (!limCartones || !carQr || !fechaCierre) {
-    alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
-    return;
-  }
-
-  let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
-                            `• Límite de Cartones: ${limCartones}\n` +
-                            `• Caracteres QR: ${carQr}\n` +
-                            `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
-                            `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
-
-  if (!confirm(mensajeConfirmacion)) {
-    return; 
-  }
-
-  document.getElementById("mainPanel").classList.add("loading");
-
-  try {
-    // Convertimos el input de HTML en un objeto Date puro de JavaScript.
-    // Esto es lo que Supabase necesita para mapear una columna 'timestamp with time zone' sin errores.
-    let objetoFechaNativo = new Date(fechaCierre);
-
-    const { error } = await _supabase
-      .from('configuracion')
-      .update({
-        limite_cartones: Number(limCartones),
-        caracteres_qr: Number(carQr),
-        fecha_cierre: objetoFechaNativo // Mandamos el objeto nativo directamente
-      })
-      .eq('id', 1);
-
-    if (error) throw error;
-    
-    alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
-    
-  } catch (err) {
-    alert("❌ Error al guardar en la base de datos: " + err.message);
-    console.error("Detalle del error:", err);
-  } finally {
-    document.getElementById("mainPanel").classList.remove("loading");
-  }
-}
-
-
 
     async function cargarMetricasDelSistema() {
       try {
@@ -553,6 +461,97 @@ async function guardarConfiguracionGlobalTable() {
         await _supabase.rpc('vaciar_tabla_bingo');
         alert("Base de datos limpia.");
         cargarMetricasDelSistema();
+      }
+    }
+
+    async function cargarCodigoCanalActual() {
+      const { data } = await _supabase.from('configuracion_sistema').select('valor').eq('clave', 'codigo_canal_whatsapp').maybeSingle();
+      if (data) document.getElementById("inputCodigoAdmin").value = data.valor;
+    }
+
+    async function actualizarCodigoCanal() {
+      let nuevoCodigo = document.getElementById("inputCodigoAdmin").value.trim().toUpperCase();
+      if (!nuevoCodigo) return;
+      await _supabase.from('configuracion_sistema').upsert({ clave: 'codigo_canal_whatsapp', valor: nuevoCodigo }, { onConflict: 'clave' });
+      alert(`¡Éxito! El código se actualizó a "${nuevoCodigo}".`);
+    }
+
+    /* =========================================================================
+       MEJORAS UNIFICADAS DE LECTURA Y ESCRITURA PARA LA TABLA CONFIGURACION
+       ========================================================================= */
+
+    /* CARGAR DATOS DE LA TABLA CONFIGURACION */
+    async function cargarConfiguracionGlobalTable() {
+      try {
+        const { data, error } = await _supabase.from('configuracion').select('*').eq('id', 1).maybeSingle();
+        if (error) throw error;
+        if (data) {
+          document.getElementById("inputLimCartonesGlobal").value = data.limite_cartones;
+          document.getElementById("inputCaracteresQrGlobal").value = data.caracteres_qr;
+          
+          // MEJORA 1: Mapeo exacto de la columna 'fecha_cierre' con guion bajo
+          if (data.fecha_cierre) {
+            let d = new Date(data.fecha_cierre);
+            let year = d.getFullYear();
+            let month = String(d.getMonth() + 1).padStart(2, '0');
+            let day = String(d.getDate()).padStart(2, '0');
+            let hours = String(d.getHours()).padStart(2, '0');
+            let minutes = String(d.getMinutes()).padStart(2, '0');
+            
+            document.getElementById("inputFechaCierreGlobal").value = `${year}-${month}-${day}T${hours}:${minutes}`;
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando tabla configuracion:", err.message);
+      }
+    }
+
+    /* GUARDAR DATOS CORREGIDOS EN LA TABLA CONFIGURACION */
+    async function guardarConfiguracionGlobalTable() {
+      let limCartones = document.getElementById("inputLimCartonesGlobal").value;
+      let carQr = document.getElementById("inputCaracteresQrGlobal").value;
+      let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato HTML: YYYY-MM-DDTHH:MM
+
+      if (!limCartones || !carQr || !fechaCierre) {
+        alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
+        return;
+      }
+
+      // MEJORA 2 (Parte A): Cuadro de confirmación interactiva para evitar clics por error
+      let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
+                                `• Límite de Cartones: ${limCartones}\n` +
+                                `• Caracteres QR: ${carQr}\n` +
+                                `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
+                                `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
+
+      if (!confirm(mensajeConfirmacion)) {
+        return; // Detiene el proceso inmediatamente si el usuario cancela
+      }
+
+      document.getElementById("mainPanel").classList.add("loading");
+
+      try {
+        // MEJORA 2 (Parte B): Objeto Date Puro para actualizar columnas 'timestamp with time zone' sin errores
+        let objetoFechaNativo = new Date(fechaCierre);
+
+        const { error } = await _supabase
+          .from('configuracion')
+          .update({
+            limite_cartones: Number(limCartones),
+            caracteres_qr: Number(carQr),
+            fecha_cierre: objetoFechaNativo // Nombre con guion bajo exacto del SQL
+          })
+          .eq('id', 1);
+
+        if (error) throw error;
+        
+        alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
+        
+      } catch (err) {
+        alert("❌ Error al guardar en la base de datos: " + err.message);
+        console.error("Detalle del error:", err);
+      } finally {
+        document.getElementById("mainPanel").classList.remove("loading");
       }
     }
   </script>
