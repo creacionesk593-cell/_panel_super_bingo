@@ -210,7 +210,6 @@
         </table>
       </div>
 
-      <!-- NUEVA SECCIÓN: CONTROL DE LA TABLA DE CONFIGURACIÓN (Mapeada desde image_029b55.png) -->
       <div class="seccion" style="border-left: 5px solid #f1c40f;">
         <h3 style="color: #d35400;">⚙️ Parámetros y Restricciones Globales del Bingo</h3>
         <p style="font-size:0.85rem; color:#7f8c8d; margin-top:-5px;">Controla los límites y la fecha límite de cierre para el registro general de cartones de juego.</p>
@@ -234,7 +233,7 @@
 
       <div class="seccion" style="border: 1px solid #ff7675;">
         <h3 style="color: #d63031;">Zona de Peligro (Cierre de Evento)</h3>
-        <p style="font-size:0.9rem; color:#636e72;">Descarga el respaldo completo en Excel y vacía la base de datos de manera irreversible.</p>
+        <p style="font-size:0.9rem; color:#636e72;">Descarga el respaldo completo en Excel and vacía la base de datos de manera irreversible.</p>
         <button class="btn-peligro" onclick="procesarLimpiezaAbsoluta()">VACIAR TABLA DE BINGO (BORRADO TOTAL)</button>
       </div>
 
@@ -263,7 +262,7 @@
         cargarMetricasDelSistema();
         cargarCodigoCanalActual();
         cargarDisenoEnPanel(); 
-        cargarConfiguracionGlobalTable(); // Cargar los límites de la tabla configuracion
+        cargarConfiguracionGlobalTable(); 
 
       } catch (err) { alert("Error: " + err.message); } 
       finally { btn.innerText = "Ingresar al Panel"; btn.disabled = false; }
@@ -351,7 +350,7 @@
       alert(`¡Éxito! El código se actualizó a "${nuevoCodigo}".`);
     }
 
-    /* FUNCIONES PARA LA TABLA CONFIGURACION (image_029b55.png) */
+    /* CARGAR DATOS DE LA TABLA CONFIGURACION */
     async function cargarConfiguracionGlobalTable() {
       try {
         const { data, error } = await _supabase.from('configuracion').select('*').eq('id', 1).maybeSingle();
@@ -361,7 +360,6 @@
           document.getElementById("inputCaracteresQrGlobal").value = data.caracteres_qr;
           
           if (data.fecha_cierre) {
-            // Convierte el formato Timestampz de la DB al formato local que requiere el input datetime-local
             let d = new Date(data.fecha_cierre);
             let year = d.getFullYear();
             let month = String(d.getMonth() + 1).padStart(2, '0');
@@ -377,59 +375,55 @@
       }
     }
 
-   
+    /* GUARDAR DATOS CORREGIDOS EN LA TABLA CONFIGURACION */
+    async function guardarConfiguracionGlobalTable() {
+      let limCartones = document.getElementById("inputLimCartonesGlobal").value;
+      let carQr = document.getElementById("inputCaracteresQrGlobal").value;
+      let fechaCierre = document.getElementById("inputFechaCierreGlobal").value;
 
-async function guardarConfiguracionGlobalTable() {
-  let limCartones = document.getElementById("inputLimCartonesGlobal").value;
-  let carQr = document.getElementById("inputCaracteresQrGlobal").value;
-  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato nativo: YYYY-MM-DDTHH:MM
+      if (!limCartones || !carQr || !fechaCierre) {
+        alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
+        return;
+      }
 
-  if (!limCartones || !carQr || !fechaCierre) {
-    alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
-    return;
-  }
+      let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
+                                `• Límite de Cartones: ${limCartones}\n` +
+                                `• Caracteres QR: ${carQr}\n` +
+                                `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
+                                `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
 
-  // Cuadro de confirmación de seguridad para evitar errores
-  let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
-                            `• Límite de Cartones: ${limCartones}\n` +
-                            `• Caracteres QR: ${carQr}\n` +
-                            `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
-                            `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
+      if (!confirm(mensajeConfirmacion)) {
+        return; 
+      }
 
-  if (!confirm(mensajeConfirmacion)) {
-    return; // Si cancela, no hace nada
-  }
+      document.getElementById("mainPanel").classList.add("loading");
 
-  document.getElementById("mainPanel").classList.add("loading");
+      try {
+        // SOLUCIÓN DEFINITIVA DE HUSO HORARIO (Ecuador UTC -5)
+        // Convertimos la selección local a una cadena de fecha ISO real interpretada sin mutaciones
+        let fechaObjeto = new Date(fechaCierre);
+        let isoStringConZonaHoraria = new Date(fechaObjeto.getTime() - (fechaObjeto.getTimezoneOffset() * 60000)).toISOString();
 
-  // Reemplazamos la "T" que genera el HTML por un espacio limpio para que Postgres lo tome como TIMESTAMP directo
-  let fechaLimpia = fechaCierre.replace("T", " ") + ":00";
+        const { error } = await _supabase
+          .from('configuracion')
+          .update({
+            limite_cartones: Number(limCartones),
+            caracteres_qr: Number(carQr),
+            fecha_cierre: isoStringConZonaHoraria
+          })
+          .eq('id', 1);
 
-  try {
-    // ENVIAR ACTUALIZACIÓN DIRECTA A LA TABLA 'configuracion'
-    const { error } = await _supabase
-      .from('configuracion')
-      .update({
-        limite_cartones: parseInt(limCartones),
-        caracteres_qr: parseInt(carQr),
-        fecha_cierre: fechaLimpia
-      })
-      .eq('id', 1); // Apunta estrictamente a tu fila con ID 1
-
-    if (error) throw error;
-    
-    alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
-    
-  } catch (err) {
-    alert("❌ Error al guardar en la base de datos: " + err.message);
-    console.error(err);
-  } finally {
-    document.getElementById("mainPanel").classList.remove("loading");
-  }
-}
-
-
-
+        if (error) throw error;
+        
+        alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
+        
+      } catch (err) {
+        alert("❌ Error al guardar en la base de datos: " + err.message);
+        console.error("Detalle del error:", err);
+      } finally {
+        document.getElementById("mainPanel").classList.remove("loading");
+      }
+    }
 
     async function cargarMetricasDelSistema() {
       try {
