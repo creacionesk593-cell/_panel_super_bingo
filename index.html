@@ -506,54 +506,56 @@
       }
     }
 
-    /* GUARDAR DATOS CORREGIDOS EN LA TABLA CONFIGURACION */
-    async function guardarConfiguracionGlobalTable() {
-      let limCartones = document.getElementById("inputLimCartonesGlobal").value;
-      let carQr = document.getElementById("inputCaracteresQrGlobal").value;
-      let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato HTML: YYYY-MM-DDTHH:MM
+    
+/* GUARDAR DATOS USANDO RPC (SINOPSIS DE PERMISOS ABSOLUTOS) */
+async function guardarConfiguracionGlobalTable() {
+  let limCartones = document.getElementById("inputLimCartonesGlobal").value;
+  let carQr = document.getElementById("inputCaracteresQrGlobal").value;
+  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value;
 
-      if (!limCartones || !carQr || !fechaCierre) {
-        alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
-        return;
-      }
+  if (!limCartones || !carQr || !fechaCierre) {
+    alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
+    return;
+  }
 
-      // MEJORA 2 (Parte A): Cuadro de confirmación interactiva para evitar clics por error
-      let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
-                                `• Límite de Cartones: ${limCartones}\n` +
-                                `• Caracteres QR: ${carQr}\n` +
-                                `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
-                                `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
+  let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales del Bingo?\n\n` +
+                            `• Límite de Cartones: ${limCartones}\n` +
+                            `• Caracteres QR: ${carQr}\n` +
+                            `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
+                            `Presione ACEPTAR para guardar los cambios o CANCELAR para salir.`;
 
-      if (!confirm(mensajeConfirmacion)) {
-        return; // Detiene el proceso inmediatamente si el usuario cancela
-      }
+  if (!confirm(mensajeConfirmacion)) {
+    return; 
+  }
 
-      document.getElementById("mainPanel").classList.add("loading");
+  document.getElementById("mainPanel").classList.add("loading");
 
-      try {
-        // MEJORA 2 (Parte B): Objeto Date Puro para actualizar columnas 'timestamp with time zone' sin errores
-        let objetoFechaNativo = new Date(fechaCierre);
+  try {
+    let objetoFechaNativo = new Date(fechaCierre);
 
-        const { error } = await _supabase
-          .from('configuracion')
-          .update({
-            limite_cartones: Number(limCartones),
-            caracteres_qr: Number(carQr),
-            fecha_cierre: objetoFechaNativo // Nombre con guion bajo exacto del SQL
-          })
-          .eq('id', 1);
+    // Invocamos la función RPC que creamos en el editor SQL.
+    // Al ser SECURITY DEFINER, actualizará la tabla obligatoriamente aunque el RLS esté bloqueado.
+    const { error } = await _supabase.rpc('actualizar_configuracion_global', {
+      p_limite_cartones: Number(limCartones),
+      p_caracteres_qr: Number(carQr),
+      p_fecha_cierre: objetoFechaNativo
+    });
 
-        if (error) throw error;
-        
-        alert("🎉 ¡Parámetros globales (incluyendo la Fecha de Cierre) actualizados con éxito!");
-        
-      } catch (err) {
-        alert("❌ Error al guardar en la base de datos: " + err.message);
-        console.error("Detalle del error:", err);
-      } finally {
-        document.getElementById("mainPanel").classList.remove("loading");
-      }
-    }
+    if (error) throw error;
+    
+    alert("🎉 ¡Parámetros globales actualizados con éxito directamente en el servidor!");
+    
+  } catch (err) {
+    alert("❌ Error crítico en el servidor: " + err.message);
+    console.error("Detalle del error:", err);
+  } finally {
+    document.getElementById("mainPanel").classList.remove("loading");
+  }
+}
+
+
+
+
   </script>
 </body>
 </html>
