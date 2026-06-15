@@ -377,39 +377,57 @@
       }
     }
 
-    async function guardarConfiguracionGlobalTable() {
-      let limCartones = document.getElementById("inputLimCartonesGlobal").value;
-      let carQr = document.getElementById("inputCaracteresQrGlobal").value;
-      let fechaCierre = document.getElementById("inputFechaCierreGlobal").value;
+   
 
-      if (!limCartones || !carQr || !fechaCierre) {
-        alert("Por favor, complete los tres campos de configuración.");
-        return;
-      }
+async function guardarConfiguracionGlobalTable() {
+  let limCartones = document.getElementById("inputLimCartonesGlobal").value;
+  let carQr = document.getElementById("inputCaracteresQrGlobal").value;
+  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato: YYYY-MM-DDTHH:MM
 
-      document.getElementById("mainPanel").classList.add("loading");
+  if (!limCartones || !carQr || !fechaCierre) {
+    alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
+    return;
+  }
 
-      try {
-        // Al mandar un objeto Date plano a Supabase, se parsea correctamente con la zona horaria nativa
-        let fechaISO = new Date(fechaCierre).toISOString();
+  // ALERTA DE SEGURIDAD INTERACTIVA
+  let mensajeConfirmacion = `❓ ¿Está seguro que desea actualizar los parámetros globales?\n\n` +
+                            `• Límite de Cartones: ${limCartones}\n` +
+                            `• Caracteres QR: ${carQr}\n` +
+                            `• Fecha de Cierre: ${fechaCierre.replace("T", " ")}\n\n` +
+                            `Presione ACEPTAR para guardar en la base de datos o CANCELAR para revertir.`;
 
-        const { error } = await _supabase
-          .from('configuracion')
-          .update({
-            limite_cartones: parseInt(limCartones),
-            caracteres_qr: parseInt(carQr),
-            fecha_cierre: fechaISO
-          })
-          .eq('id', 1);
+  if (!confirm(mensajeConfirmacion)) {
+    // Si el usuario presiona "Cancelar", la función se detiene inmediatamente y no altera nada
+    return;
+  }
 
-        if (error) throw error;
-        alert("🎉 ¡Parámetros de la tabla configuracion actualizados con éxito!");
-      } catch (err) {
-        alert("Error al actualizar la configuración: " + err.message);
-      } finally {
-        document.getElementById("mainPanel").classList.remove("loading");
-      }
-    }
+  // Si presionó "Aceptar", el proceso continúa normalmente
+  document.getElementById("mainPanel").classList.add("loading");
+
+  try {
+    // Convertimos el formato "T" de HTML a espacio limpio para PostgreSQL/Supabase
+    let fechaFormateadaParaDB = fechaCierre.replace("T", " ") + ":00";
+
+    const { error } = await _supabase
+      .from('configuracion')
+      .update({
+        limite_cartones: parseInt(limCartones),
+        caracteres_qr: parseInt(carQr),
+        fecha_cierre: fechaFormateadaParaDB
+      })
+      .eq('id', 1);
+
+    if (error) throw error;
+    alert("🎉 ¡Parámetros de la tabla configuracion actualizados con éxito!");
+  } catch (err) {
+    alert("❌ Error al actualizar la configuración: " + err.message);
+    console.error(err);
+  } finally {
+    document.getElementById("mainPanel").classList.remove("loading");
+  }
+}
+
+
 
     async function cargarMetricasDelSistema() {
       try {
