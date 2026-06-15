@@ -383,7 +383,7 @@
 async function guardarConfiguracionGlobalTable() {
   let limCartones = document.getElementById("inputLimCartonesGlobal").value;
   let carQr = document.getElementById("inputCaracteresQrGlobal").value;
-  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Viene como: YYYY-MM-DDTHH:MM
+  let fechaCierre = document.getElementById("inputFechaCierreGlobal").value; // Formato HTML: YYYY-MM-DDTHH:MM
 
   if (!limCartones || !carQr || !fechaCierre) {
     alert("⚠️ Por favor, complete todos los campos de configuración antes de continuar.");
@@ -403,15 +403,16 @@ async function guardarConfiguracionGlobalTable() {
   document.getElementById("mainPanel").classList.add("loading");
 
   try {
-    // Formateamos la fecha limpia quitando la 'T' para que PostgreSQL la asimile directo
-    let fechaLimpiaPostgres = fechaCierre.replace("T", " ") + ":00";
+    // Convertimos el input de HTML en un objeto Date puro de JavaScript.
+    // Esto es lo que Supabase necesita para mapear una columna 'timestamp with time zone' sin errores.
+    let objetoFechaNativo = new Date(fechaCierre);
 
     const { error } = await _supabase
       .from('configuracion')
       .update({
         limite_cartones: Number(limCartones),
         caracteres_qr: Number(carQr),
-        fechacierre: fechaLimpiaPostgres // Corregido: 'fechacierre' sin guion bajo, igual a tu tabla
+        fecha_cierre: objetoFechaNativo // Mandamos el objeto nativo directamente
       })
       .eq('id', 1);
 
